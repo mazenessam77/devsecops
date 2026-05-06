@@ -2,6 +2,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+RUN apk upgrade --no-cache && npm install -g npm@latest
 COPY package*.json ./
 
 RUN npm install
@@ -16,6 +17,7 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
+RUN apk upgrade --no-cache && npm install -g npm@latest
 RUN addgroup -S myapp && adduser -S -G myapp myapp
 
 COPY --from=builder --chown=myapp:myapp /app/package*.json ./

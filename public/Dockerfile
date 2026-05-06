@@ -3,7 +3,7 @@ FROM nginxinc/nginx-unprivileged:alpine
 WORKDIR /usr/share/nginx/html
 
 USER root
-RUN rm -rf ./*
+RUN apk upgrade --no-cache && rm -rf ./*
 
 COPY --chown=nginx:nginx index.html style.css app.js ./
 COPY --chown=nginx:nginx nginx.conf /etc/nginx/conf.d/default.conf
