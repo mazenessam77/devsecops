@@ -5,7 +5,8 @@ WORKDIR /usr/share/nginx/html
 USER root
 RUN rm -rf ./*
 
-COPY --chown=nginx:nginx . .
+COPY --chown=nginx:nginx index.html style.css app.js ./
+COPY --chown=nginx:nginx nginx.conf /etc/nginx/conf.d/default.conf
 
 USER nginx
 
