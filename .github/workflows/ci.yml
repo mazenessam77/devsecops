@@ -1,0 +1,41 @@
+name: CI - Build and Security Scan
+
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-scan:
+    name: Build & Scan Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+
+      - name: Build Backend Image
+        run: docker build -t crud-backend:test .
+
+      - name: Run Trivy Vulnerability Scanner (Backend)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'crud-backend:test'
+          format: 'table'
+          
+          exit-code: '1' 
+          severity: 'CRITICAL,HIGH'
+
+      # 3.Frontend
+      - name: Build Frontend Image
+        run: docker build -t crud-frontend:test ./public
+
+      # 4.Frontend
+      - name: Run Trivy Vulnerability Scanner (Frontend)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'crud-frontend:test'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
