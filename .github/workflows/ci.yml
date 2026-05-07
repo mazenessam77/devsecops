@@ -2,6 +2,8 @@ name: CI - Build and Security Scan
 
 
 on:
+  push:
+    branches: [ "dev" ]
   pull_request:
     branches: [ "main" ]
 
