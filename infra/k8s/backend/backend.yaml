@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: backend
+  labels:
+    app: backend-api
+    tier: backend
+data:
+  DB_HOST: "mysql.database.svc.cluster.local"
+  DB_PORT: "3306"
+  DB_NAME: "crud_app"
+  NODE_ENV: "production"
+  PORT: "3000"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backend-db-secret
+  namespace: backend
+  labels:
+    app: backend-api
+    tier: backend
+type: Opaque
+data:
+  DB_USER: YXBwX3VzZXI=
+  DB_PASSWORD: QXBwVXMzciFTM2N1cmU=
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-api
+  namespace: backend
+  labels:
+    app: backend-api
+    tier: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: backend-api
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-api
+  namespace: backend
+  labels:
+    app: backend-api
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: backend-api
+        tier: backend
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: backend-api
+          image: 541405370428.dkr.ecr.eu-west-2.amazonaws.com/devsecops-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-db-secret
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /api/items
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /api/items
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3

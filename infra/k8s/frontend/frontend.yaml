@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: frontend
+  labels:
+    app: frontend-web
+    tier: frontend
+data:
+  NEXT_PUBLIC_API_URL: "http://backend-api.backend.svc.cluster.local:3000"
+  NODE_ENV: "production"
+  PORT: "3000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-web
+  namespace: frontend
+  labels:
+    app: frontend-web
+    tier: frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: frontend-web
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-web
+  namespace: frontend
+  labels:
+    app: frontend-web
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend-web
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: frontend-web
+        tier: frontend
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: frontend-web
+          image: 541405370428.dkr.ecr.eu-west-2.amazonaws.com/devsecops-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: frontend-config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
