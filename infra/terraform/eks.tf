@@ -280,3 +280,36 @@ resource "aws_eks_addon" "vpc_cni" {
 
   depends_on = [aws_eks_node_group.main]
 }
+
+resource "aws_iam_role" "cloudwatch_agent" {
+  name = "${var.project_name}-cloudwatch-agent-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.eks.arn
+      }
+      Action = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringLike = {
+          "${local.oidc_provider_url}:sub" = "system:serviceaccount:amazon-cloudwatch:*"
+        }
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "cloudwatch_agent" {
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+  role       = aws_iam_role.cloudwatch_agent.name
+}
+
+resource "aws_eks_addon" "cloudwatch_observability" {
+  cluster_name             = aws_eks_cluster.main.name
+  addon_name               = "amazon-cloudwatch-observability"
+  service_account_role_arn = aws_iam_role.cloudwatch_agent.arn
+
+  depends_on = [aws_eks_node_group.main]
+}
